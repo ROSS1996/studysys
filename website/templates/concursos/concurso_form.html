@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Criar{% endif %} Concurso{% endblock %}
+
+{% block content %}
+<style>
+    #div_id_topicos {
+        max-height: 200px; /* Set a height suitable for your layout */
+        overflow-y: auto;  /* Enable vertical scrolling */
+        display: block;    /* Ensure checkboxes are displayed in a block format */
+    }
+</style>
+
+<div class="container py-4">
+    <h1 class="mb-4" style="color: var(--primary-color);">{% if form.instance.pk %}Editar{% else %}Criar{% endif %} Concurso</h1>
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {{ form|crispy }}
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <a href="{% url 'concurso_list' %}" class="btn btn-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4" style="color: var(--primary-color);">Detalhes da Questão</h1>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">{{ questao.enunciado }}</h5>
+            <p><strong>Banca:</strong> {{ questao.banca.name }}</p>
+            <p><strong>Concurso:</strong> {{ questao.concurso.title }}</p>
+            <p><strong>ID:</strong> {{ questao.id }}</p>
+
+            <h6 class="mt-4">Alternativas:</h6>
+            <ul class="list-group">
+                {% if questao.alternativa_1 %}
+                    <li class="list-group-item {% if questao.correta_1 and questao.acerto %}list-group-item-success{% endif %}">
+                        {{ questao.alternativa_1 }} {% if questao.correta_1 and questao.acerto %}<span class="badge bg-success">Correta</span>{% endif %}
+                    </li>
+                {% endif %}
+                {% if questao.alternativa_2 %}
+                    <li class="list-group-item {% if questao.correta_2 and questao.acerto %}list-group-item-success{% endif %}">
+                        {{ questao.alternativa_2 }} {% if questao.correta_2 and questao.acerto %}<span class="badge bg-success">Correta</span>{% endif %}
+                    </li>
+                {% endif %}
+                {% if questao.alternativa_3 %}
+                    <li class="list-group-item {% if questao.correta_3 and questao.acerto  %}list-group-item-success{% endif %}">
+                        {{ questao.alternativa_3 }} {% if questao.correta_3 and questao.acerto %}<span class="badge bg-success">Correta</span>{% endif %}
+                    </li>
+                {% endif %}
+                {% if questao.alternativa_4 %}
+                    <li class="list-group-item {% if questao.correta_4 and questao.acerto %}list-group-item-success{% endif %}">
+                        {{ questao.alternativa_4 }} {% if questao.correta_4 and questao.acerto %}<span class="badge bg-success">Correta</span>{% endif %}
+                    </li>
+                {% endif %}
+                {% if questao.alternativa_5 %}
+                    <li class="list-group-item {% if questao.correta_5 and questao.acerto %}list-group-item-success{% endif %}">
+                        {{ questao.alternativa_5 }} {% if questao.correta_5 and questao.acerto %}<span class="badge bg-success">Correta</span>{% endif %}
+                    </li>
+                {% endif %}
+            </ul>
+
+            <div class="mt-4">
+                {% if questao.acerto is not None %}
+                    {% if questao.data_realizada %}
+                        <p><strong>Data Realizada:</strong> {{ questao.data_realizada }}</p>
+                    {% else %}
+                        <p><strong>Data Realizada:</strong> Não realizada ainda.</p>
+                    {% endif %}
+                    <p><strong>Acerto:</strong> 
+                        <span class="badge {% if questao.acerto %}bg-success{% else %}bg-danger{% endif %}">
+                            {{ questao.acerto|yesno:"Sim,Não" }}
+                        </span>
+                    </p>
+                {% else %}
+                    <p><strong>Status:</strong> Esta questão não foi respondida.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="mt-4">
+        <a href="{% url 'questao_list' %}" class="btn btn-secondary">Voltar para Questões</a>
+        <a href="{% url 'questao_edit' questao.id %}" class="btn btn-primary">Editar Questão</a>
+    </div>
+</div>
+{% endblock %}

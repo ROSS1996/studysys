@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load pagination_tags %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 style="color: var(--primary-color);">{{ object.nome }}</h1>
+        <div>
+            <a href="{% url 'disciplina_edit' object.id %}" class="btn btn-primary me-2">
+                <i class="fas fa-edit me-2"></i>Editar
+            </a>
+            <a href="{% url 'disciplina_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Estatísticas Gerais</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        <strong>Total de Tópicos:</strong> {{ stats.total_topicos }}<br>
+                        <strong>Tópicos Estudados:</strong> {{ stats.topicos_estudados }}<br>
+                        <strong>Progresso Geral:</strong> {{ stats.percentual_estudado|floatformat:1 }}%
+                    </p>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar bg-success" 
+                             role="progressbar" 
+                             style="width: {{ stats.percentual_estudado }}%"
+                             aria-valuenow="{{ stats.percentual_estudado }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ stats.percentual_estudado|floatformat:1 }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Questões</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        <strong>Total de Questões:</strong> {{ stats.total_questoes }}<br>
+                        <strong>Questões Respondidas:</strong> {{ stats.questoes_respondidas }}<br>
+                        <strong>Taxa de Acerto:</strong> {{ stats.taxa_acerto|floatformat:1 }}%
+                    </p>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar bg-info" 
+                             role="progressbar" 
+                             style="width: {{ stats.taxa_acerto }}%"
+                             aria-valuenow="{{ stats.taxa_acerto }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ stats.taxa_acerto|floatformat:1 }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Revisões Pendentes</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        <strong>Tópicos para Revisar:</strong> {{ stats.topicos_revisar }}<br>
+                        <strong>Última Atualização:</strong> {{ stats.ultima_atualizacao|default:"Nunca" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Tópicos da Disciplina</h5>
+            <a href="{% url 'topico_create' %}?disciplina={{ object.id }}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus me-2"></i>Novo Tópico
+            </a>
+        </div>
+        <div class="card-body">
+            {% if topicos %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Tópico</th>
+                                <th>Status</th>
+                                <th>Data Estudo</th>
+                                <th>Questões</th>
+                                <th>Taxa de Acerto</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for topico in topicos %}
+                            <tr>
+                                <td>{{ topico.nome }}</td>
+                                <td>
+                                    {% if topico.data_estudo %}
+                                        <span class="badge bg-success">Estudado</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Pendente</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ topico.data_estudo|default:"--" }}</td>
+                                <td>{{ topico.total_questoes }}</td>
+                                <td>
+                                    {% if topico.taxa_acerto is not None %}
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar bg-success" 
+                                                 role="progressbar" 
+                                                 style="width: {{ topico.taxa_acerto }}%"
+                                                 aria-valuenow="{{ topico.taxa_acerto }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                {{ topico.taxa_acerto|floatformat:1 }}%
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        --
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'topico_detail' topico.id %}" class="btn btn-sm btn-outline-primary me-2">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'topico_edit' topico.id %}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {# Pagination #}
+                {% if page_obj %}
+                    <nav aria-label="Navegação de página">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if query_string %}&{{ query_string }}{% endif %}">&laquo; Primeira</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Anterior</a>
+                                </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{% if query_string %}&{{ query_string }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Próxima</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if query_string %}&{{ query_string }}{% endif %}">Última &raquo;</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+                
+            {% else %}
+                <p class="text-muted">Nenhum tópico cadastrado para esta disciplina.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

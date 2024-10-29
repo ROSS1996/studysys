@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2>Bancas</h2>
+    <a href="{% url 'banca_create' %}" class="btn btn-primary">Create New Banca</a>
+    <ul class="list-group mt-4">
+        {% for banca in bancas %}
+            <li class="list-group-item">
+                <a href="{% url 'banca_detail' banca.id %}">{{ banca.nome }}</a>
+                <span class="badge badge-secondary">ID: {{ banca.id }}</span>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}

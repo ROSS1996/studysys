@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+{% block content %}
+{% load custom_filters %}
+{% load pagination_tags %}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 style="color: var(--primary-color);">Questões</h1>
+        <div>
+            <button class="btn btn-secondary me-2" type="button" data-bs-toggle="collapse" data-bs-target="#filterPanel">
+                Filtros
+            </button>
+            <a href="{% url 'questao_create' %}" class="btn btn-primary">Nova Questão</a>
+        </div>
+    </div>
+
+    {# Filter Panel #}
+    <div id="filterPanel" class="collapse mb-4">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row">
+                    <!-- Disciplina Filter -->
+                    <div class="col-md-3">
+                        <label class="form-label">Disciplina</label>
+                        <select name="disciplina" class="form-select" id="disciplinaSelect">
+                            <option value="">Todas</option>
+                            {% for disciplina in disciplinas %}
+                                <option value="{{ disciplina.id }}" 
+                                    {% if current_filters.disciplina == disciplina.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ disciplina.nome }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Topico Filter -->
+                    <div class="col-md-3">
+                        <label class="form-label">Tópico</label>
+                        <select name="topico" class="form-select">
+                            <option value="">Todos</option>
+                            {% for topico in topicos %}
+                                <option value="{{ topico.id }}"
+                                    {% if current_filters.topico == topico.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ topico.nome }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Banca Filter -->
+                    <div class="col-md-3">
+                        <label class="form-label">Banca</label>
+                        <select name="banca" class="form-select">
+                            <option value="">Todas</option>
+                            {% for banca in bancas %}
+                                <option value="{{ banca.id }}"
+                                    {% if current_filters.banca == banca.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ banca.nome }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div class="col-md-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="">Todos</option>
+                            <option value="answered" {% if current_filters.status == 'answered' %}selected{% endif %}>
+                                Respondidas
+                            </option>
+                            <option value="unanswered" {% if current_filters.status == 'unanswered' %}selected{% endif %}>
+                                Não Respondidas
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 mt-3">
+                        <button type="submit" class="btn btn-primary">Aplicar Filtros</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {# Questions List #}
+    <div class="list-group">
+        {% for questao in page_obj %}
+            <div id="questao-{{ questao.id }}" class="list-group-item mb-3">
+                <div class="d-flex w-100 justify-content-between align-items-center mb-2">
+                    <h5 class="mb-1" style="color: var(--primary-color);">
+                        {% for topico in questao.topicos.all %}
+                        {{ topico.disciplina.nome }} - {{ topico.nome }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </h5>
+                    <div>
+                        {% if questao.data_realizada %}
+                            <span id="date-badge-{{ questao.id }}" class="badge bg-secondary me-2">
+                                {{ questao.data_realizada|date:"d/m/Y" }}
+                            </span>
+                        {% endif %}
+                        {% if questao.data_realizada %}
+                            <span id="status-badge-{{ questao.id }}" 
+                                class="badge {% if questao.acerto %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if questao.acerto %}Correta{% else %}Incorreta{% endif %}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <small>
+                    {{ questao.concurso.nivel }}, {{ questao.banca.nome }}, 
+                    {{ questao.concurso.data_abertura|date:"Y" }}, 
+                    {{ questao.concurso.entidade }}, {{ questao.concurso.cargo }}
+                </small>
+
+                <p class="mt-2">{{ questao.enunciado }}</p>
+
+                {% for i in "12345" %}
+                    {% with alternativa_field="alternativa_"|add:i %}
+                    {% with correta_field="correta_"|add:i %}
+                    {% with alternativa=questao|get_attr:alternativa_field %}
+                    {% if alternativa %}
+                        <div class="form-check">
+                            <input type="radio" 
+                                id="option{{ i }}-{{ questao.id }}" 
+                                name="questao-{{ questao.id }}" 
+                                value="correta_{{ i }}"
+                                class="form-check-input question-option"
+                                data-questao-id="{{ questao.id }}"
+                                {% if questao.data_realizada %}disabled{% endif %}
+                                {% if questao.data_realizada and questao|get_attr:correta_field %}checked{% endif %}>
+                            <label class="form-check-label" for="option{{ i }}-{{ questao.id }}">
+                                {{ alternativa }}
+                            </label>
+                        </div>
+                    {% endif %}
+                    {% endwith %}
+                    {% endwith %}
+                    {% endwith %}
+                {% endfor %}
+
+                {% if not questao.data_realizada %}
+                    <button class="btn btn-primary btn-sm mt-3 answer-button" 
+                            data-questao-id="{{ questao.id }}">
+                        Responder
+                    </button>
+                {% endif %}
+
+                <div id="feedback-{{ questao.id }}" class="mt-2"></div>
+            </div>
+        {% empty %}
+            <div class="alert alert-info">
+                Nenhuma questão encontrada.
+            </div>
+        {% endfor %}
+    </div>
+
+    {# Pagination #}
+    {% if page_obj %}
+        <nav aria-label="Navegação de página">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if query_string %}&{{ query_string }}{% endif %}">&laquo; Primeira</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Anterior</a>
+                    </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if query_string %}&{{ query_string }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Próxima</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if query_string %}&{{ query_string }}{% endif %}">Última &raquo;</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+
+<script>
+    // Auto-submit form when disciplina changes to update topicos
+    document.getElementById('disciplinaSelect').addEventListener('change', function() {
+        this.form.submit();
+    });
+
+// Handle question answers
+document.querySelectorAll('.answer-button').forEach(button => {
+    button.addEventListener('click', async function() {
+        const questaoId = this.dataset.questaoId;
+        const selectedOption = document.querySelector(`input[name="questao-${questaoId}"]:checked`);
+
+        if (!selectedOption) {
+            alert('Por favor, selecione uma alternativa.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/questoes/${questaoId}/answer/`, {  // Updated URL
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    selected_option: selectedOption.value
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Update the UI
+                const dateBadge = document.createElement('span');
+                dateBadge.id = `date-badge-${questaoId}`;
+                dateBadge.className = 'badge bg-secondary me-2';
+                dateBadge.textContent = data.data_realizada;
+
+                const statusBadge = document.createElement('span');
+                statusBadge.id = `status-badge-${questaoId}`;
+                statusBadge.className = `badge ${data.correct ? 'bg-success' : 'bg-danger'}`;
+                statusBadge.textContent = data.correct ? 'Correta' : 'Incorreta';
+
+                // Find the badge container and update it
+                const badgeContainer = document.querySelector(`#questao-${questaoId} .d-flex > div`);
+                badgeContainer.innerHTML = '';
+                badgeContainer.appendChild(dateBadge);
+                badgeContainer.appendChild(statusBadge);
+
+                // Disable the radio buttons and answer button
+                document.querySelectorAll(`input[name="questao-${questaoId}"]`).forEach(input => {
+                    input.disabled = true;
+                });
+                this.style.display = 'none';
+
+                // Show feedback
+                const feedbackDiv = document.getElementById(`feedback-${questaoId}`);
+                feedbackDiv.innerHTML = `<div class="alert ${data.correct ? 'alert-success' : 'alert-danger'}">
+                    ${data.correct ? 'Parabéns! Resposta correta!' : 'Resposta incorreta. Tente novamente em outro momento.'}
+                </div>`;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Erro ao enviar resposta. Por favor, tente novamente.');
+        }
+    });
+});
+
+    // Function to get CSRF token from cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}

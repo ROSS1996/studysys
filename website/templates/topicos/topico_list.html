@@ -1,0 +1,45 @@
+{# topico_list.html #}
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0" style="color: var(--primary-color);">Tópicos</h1>
+        <a href="{% url 'topico_create' %}" class="btn btn-primary">Novo Tópico</a>
+    </div>
+
+    {% for disciplina, topicos in disciplinas.items %}
+        <div class="mb-4">
+            <h3 class="mb-3" style="color: var(--primary-color);">{{ disciplina.nome }}</h3>
+            <div class="row">
+                {% for topico in topicos %}
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title" style="color: var(--primary-color);">{{ topico.nome }}</h5>
+                                <p class="small">
+                                    Última revisão: 
+                                    {% if topico.data_estudo %}
+                                        {{ topico.data_estudo|date:"d/m/Y" }}
+                                    {% else %}
+                                        Nunca estudado
+                                    {% endif %}
+                                </p>
+                                <div class="progress mb-3" style="height: 10px;">
+                                    <div class="progress-bar" role="progressbar"
+                                         style="width: {{ topico.taxa_acerto|default:0 }}%; background-color: var(--primary-color);">
+                                    </div>
+                                </div>
+                                <p>Taxa de Acerto: {{ topico.taxa_acerto|default:0 }}%</p>
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'topico_detail' topico.id %}" class="btn btn-outline-primary btn-sm">Detalhes</a>
+                                    <a href="{% url 'topico_edit' topico.id %}" class="btn btn-outline-secondary btn-sm">Editar</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2>{{ banca.nome }}</h2>
+    <p>ID: {{ banca.id }}</p>
+    <p>Total Concursos: {{ banca.total_concursos }}</p>
+    <p>Total Questoes: {{ banca.total_questoes }}</p>
+
+    <a href="{% url 'banca_edit' banca.id %}" class="btn btn-primary">Edit</a>
+    <a href="{% url 'banca_list' %}" class="btn btn-secondary">Back to List</a>
+{% endblock %}

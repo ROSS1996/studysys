@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 style="color: var(--primary-color);">Concursos</h1>
+        <a href="{% url 'concurso_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Novo Concurso
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Entidade</th>
+                            <th>Cargo</th>
+                            <th>Data da Prova</th>
+                            <th>Salário</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for concurso in concursos %}
+                        <tr>
+                            <td>{{ concurso.entidade }}</td>
+                            <td>{{ concurso.cargo }}</td>
+                            <td>{{ concurso.data_prova|date:"d/m/Y" }}</td>
+                            <td>R$ {{ concurso.salario|floatformat:2 }}</td>
+                            <td>
+                                {% if concurso.finalizado %}
+                                    <span class="badge bg-secondary">Finalizado</span>
+                                {% elif concurso.iniciado %}
+                                    <span class="badge bg-primary">Em andamento</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Não iniciado</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'concurso_detail' concurso.id %}" class="btn btn-sm btn-outline-primary me-2">
+                                    <i class="fas fa-eye me-1"></i>Detalhes
+                                </a>
+                                <a href="{% url 'concurso_edit' concurso.id %}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-edit me-1"></i>Editar
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

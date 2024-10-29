@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0" style="color: var(--primary-color);">{{ concurso.entidade }} - {{ concurso.cargo }}</h1>
+        <a href="{% url 'concurso_edit' concurso.id %}" class="btn btn-primary">Editar</a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h4 class="mb-0">Informações do Concurso</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Banca:</strong> {{ concurso.banca }}</p>
+                    <p><strong>Data de Abertura:</strong> {{ concurso.data_abertura|date:"d/m/Y" }}</p>
+                    <p><strong>Data da Prova:</strong> {{ concurso.data_prova|date:"d/m/Y" }}</p>
+                    <p><strong>Salário:</strong> R$ {{ concurso.salario|floatformat:2 }}</p>
+                    <p><strong>Nível:</strong> {{ concurso.get_nivel_display }}</p>
+                    <p><strong>Área:</strong> {{ concurso.area }}</p>
+                    <p>
+                        <strong>Status:</strong>
+                        {% if concurso.finalizado %}
+                            <span class="badge bg-secondary">Finalizado</span>
+                        {% elif concurso.iniciado %}
+                            <span class="badge bg-primary">Em andamento</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Não iniciado</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h4 class="mb-0">Progresso nos Tópicos</h4>
+                </div>
+                <div class="card-body">
+                    {% for disciplina, topicos in disciplinas.items %}
+                        <details class="discipline-details {% if forloop.first %}open{% endif %}">
+                            <summary>{{ disciplina.nome }}</summary>
+                            <div class="table-responsive mt-2">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Tópico</th>
+                                            <th>Estudado</th>
+                                            <th>Questões</th>
+                                            <th>Acertos</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for topico in topicos %}
+                                            <tr>
+                                                <td>{{ topico.nome }}</td>
+                                                <td>
+                                                    {% if topico.data_estudo %}
+                                                        <span class="badge bg-success">Sim</span>
+                                                    {% else %}
+                                                        <span class="badge bg-danger">Não</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ topico.total_questoes }}</td>
+                                                <td>{{ topico.total_acertos }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </details>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .discipline-details {
+        margin-bottom: 1rem;
+        border: 1px solid var(--primary-light);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .discipline-details summary {
+        padding: 1rem;
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .discipline-details summary:hover {
+        background-color: var(--primary-color);
+        color: white;
+    }
+
+    .discipline-details summary:focus {
+        outline: none;
+    }
+
+    .discipline-details[open] summary {
+        background-color: var(--primary-color);
+        color: white;
+    }
+
+    .discipline-details .table-responsive {
+        padding: 1rem;
+        background-color: white;
+    }
+
+    .discipline-details table {
+        margin-bottom: 0;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const detailsElements = document.querySelectorAll(".discipline-details");
+        detailsElements.forEach((details) => {
+            details.addEventListener("toggle", function() {
+                if (details.open) {
+                    // Close all other details
+                    detailsElements.forEach((d) => {
+                        if (d !== details) {
+                            d.removeAttribute("open");
+                        }
+                    });
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
