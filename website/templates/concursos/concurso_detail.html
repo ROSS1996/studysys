@@ -47,6 +47,7 @@
                                     <thead>
                                         <tr>
                                             <th>Tópico</th>
+                                            <th>Grupo</th>
                                             <th>Estudado</th>
                                             <th>Questões</th>
                                             <th>Acertos</th>
@@ -56,6 +57,7 @@
                                         {% for topico in topicos %}
                                             <tr>
                                                 <td>{{ topico.nome }}</td>
+                                                <td>{{ topico.grupo.nome|default:"-" }}</td>
                                                 <td>
                                                     {% if topico.data_estudo %}
                                                         <span class="badge bg-success">Sim</span>

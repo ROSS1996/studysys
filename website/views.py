@@ -51,24 +51,29 @@ class ConcursoDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Get all topics for this concurso with their question stats, grouped by disciplina
+        # Initialize disciplinas dictionary to store topics grouped by disciplina
         disciplinas = {}
         
-        # Get all topicos for this concurso through the many-to-many relationship
+        # Annotate topicos with `total_questoes`, `total_acertos` and select `grupo`
         topicos = (self.object.topico_set
-                  .annotate(
-                      total_questoes=Count('questao'),
-                      total_acertos=Count('questao', filter=Q(questao__acerto=True))
-                  )
-                  .select_related('disciplina')
-                  .order_by('disciplina__nome', 'nome')  # Order by disciplina and then topico name
-                  .all())
-        
+                   .annotate(
+                       total_questoes=Count('questao'),
+                       total_acertos=Count('questao', filter=Q(questao__acerto=True))
+                   )
+                   .select_related('disciplina', 'grupo')  # Include related fields
+                   .order_by('disciplina__nome', 'grupo__nome', 'nome')  # Sort by disciplina, grupo, and then topico name
+                   .all())
+
         # Group topicos by disciplina
         for topico in topicos:
-            if topico.disciplina not in disciplinas:
-                disciplinas[topico.disciplina] = []
-            disciplinas[topico.disciplina].append(topico)
+            disciplina = topico.disciplina
+
+            # Ensure the disciplina exists in the dictionary
+            if disciplina not in disciplinas:
+                disciplinas[disciplina] = []
+
+            # Append the topico to the correct disciplina
+            disciplinas[disciplina].append(topico)
         
         context['disciplinas'] = disciplinas
         return context
@@ -175,16 +180,18 @@ class DisciplinaDetailView(DetailView):
                     None
                 )
             )
+            .select_related('grupo')  # Add 'grupo' for efficient querying
+            .order_by('grupo__nome', 'nome')  # Sort by grupo name first, then by topico name
             .all()
         )
 
         # Implement pagination
-        page = self.request.GET.get('page', 1)  # Get the page number
-        paginator = Paginator(topicos, self.paginate_by)  # Create a paginator
-        paginated_topicos = paginator.get_page(page)  # Get the current page of topics
+        page = self.request.GET.get('page', 1)
+        paginator = Paginator(topicos, self.paginate_by)
+        paginated_topicos = paginator.get_page(page)
 
-        context['topicos'] = paginated_topicos  # Update context with paginated topics
-        context['page_obj'] = paginated_topicos  # Add page_obj for pagination in template
+        context['topicos'] = paginated_topicos
+        context['page_obj'] = paginated_topicos
         
         # Calculate disciplina statistics
         total_topicos = disciplina.topico_set.count()

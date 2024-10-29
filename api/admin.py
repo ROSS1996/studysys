@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.db.models import Count
 from .models import (
-    Banca, Concurso, Disciplina, Topico, ConcursoTopico,
+    Banca, Concurso, Disciplina, Topico, ConcursoTopico, GrupoTopico,
     Questao, QuestaoTopico
 )
 
@@ -116,15 +116,29 @@ class DisciplinaAdmin(admin.ModelAdmin):
     total_topicos.short_description = 'Total de Tópicos'
     total_topicos.admin_order_field = 'total_topicos'
 
+@admin.register(GrupoTopico)
+class GrupoAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'id', 'total_topicos')
+    search_fields = ('nome',)
+    ordering = ('nome',)
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.annotate(total_topicos=Count('topico'))
+
+    def total_topicos(self, obj):
+        return obj.total_topicos
+    total_topicos.short_description = 'Total de Tópicos'
+    total_topicos.admin_order_field = 'total_topicos'
 
 @admin.register(Topico)
 class TopicoAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'disciplina', 'data_estudo', 'total_questoes')
-    list_filter = ('data_estudo', 'disciplina')
+    list_display = ('nome', 'disciplina', 'grupo', 'data_estudo', 'total_questoes')
+    list_filter = ('data_estudo', 'disciplina', 'grupo')
     search_fields = ('nome',)
     ordering = ('nome',)
     date_hierarchy = 'data_estudo'
-    autocomplete_fields = ['disciplina']
+    autocomplete_fields = ['disciplina', 'grupo']
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)

@@ -42,11 +42,18 @@ class Disciplina(models.Model):
     def __str__(self):
         return self.nome
 
+class GrupoTopico(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nome = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.nome
 
 class Topico(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     nome = models.CharField(max_length=255)
     disciplina = models.ForeignKey(Disciplina, on_delete=models.CASCADE)  # Updated field
+    grupo = models.ForeignKey(GrupoTopico, on_delete=models.CASCADE, null=True, blank=True)  # Updated field
     concursos = models.ManyToManyField(Concurso, through='ConcursoTopico')
     data_estudo = models.DateField(null=True, blank=True)
 

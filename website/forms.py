@@ -51,7 +51,7 @@ class DisciplinaForm(forms.ModelForm):
 class TopicoForm(forms.ModelForm):
     class Meta:
         model = Topico
-        fields = ['nome', 'disciplina', 'data_estudo']
+        fields = ['nome', 'disciplina', 'grupo', 'data_estudo']
 
 class QuestaoForm(forms.ModelForm):
     class Meta:
