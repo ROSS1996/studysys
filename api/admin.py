@@ -90,7 +90,7 @@ class ConcursoAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Informações Básicas', {
-            'fields': ('entidade', 'cargo', 'banca', 'area')
+            'fields': ('entidade', 'cargo', 'banca', 'area', 'edital')
         }),
         ('Datas e Status', {
             'fields': ('data_abertura', 'data_prova', 'iniciado', 'finalizado', 'inscrito')

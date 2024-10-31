@@ -27,7 +27,7 @@ class ConcursoForm(forms.ModelForm):
         model = Concurso
         fields = [
             'entidade', 'cargo', 'banca', 'data_abertura', 'salario', 
-            'nivel', 'data_prova', 'area', 'iniciado', 'finalizado', 
+            'nivel', 'data_prova', 'area', 'edital', 'iniciado', 'finalizado', 
             'inscrito', 'topicos'
         ]
 

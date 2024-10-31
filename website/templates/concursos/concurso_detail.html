@@ -19,6 +19,9 @@
                     <p><strong>Salário:</strong> R$ {{ concurso.salario|floatformat:2 }}</p>
                     <p><strong>Nível:</strong> {{ concurso.get_nivel_display }}</p>
                     <p><strong>Área:</strong> {{ concurso.area }}</p>
+                    {% if concurso.edital %}
+                    <p><strong>Edital:</strong> <a href={{ concurso.edital }} target="_blank" rel="noopener noreferrer">Link</a></p>
+                    {% endif %}
                     <p>
                         <strong>Status:</strong>
                         {% if concurso.finalizado %}
