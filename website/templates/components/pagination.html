@@ -1,44 +1,55 @@
 {# templates/components/pagination.html #}
 {% if page_obj.paginator.num_pages > 1 %}
-<nav aria-label="Page navigation" class="mt-4">
+<nav aria-label="Page navigation">
     <ul class="pagination justify-content-center">
         {# First page button #}
-        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
-            <a class="page-link" href="?page=1" {% if not page_obj.has_previous %}tabindex="-1" aria-disabled="true"{% endif %}>
-                <span aria-hidden="true">&laquo;&laquo;</span>
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page=1{% if query_string %}&{{ query_string }}{% endif %}" aria-label="First">
+                <span aria-hidden="true">«</span> Primeiro
             </a>
         </li>
-        
+        {% endif %}
+
         {# Previous page button #}
-        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
-            <a class="page-link" href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}{% else %}#{% endif %}" 
-               {% if not page_obj.has_previous %}tabindex="-1" aria-disabled="true"{% endif %}>
-                <span aria-hidden="true">&laquo;</span>
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}" aria-label="Previous">
+                <span aria-hidden="true">«</span> Anterior
             </a>
         </li>
-        
+        {% endif %}
+
         {# Page numbers #}
-        {% for page_num in page_range %}
-            <li class="page-item {% if page_num == page_obj.number %}active{% endif %}">
-                <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active">
+                <span class="page-link">{{ num }}</span>
             </li>
+            {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ num }}{% if query_string %}&{{ query_string }}{% endif %}">{{ num }}</a>
+            </li>
+            {% endif %}
         {% endfor %}
-        
+
         {# Next page button #}
-        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
-            <a class="page-link" href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}{% else %}#{% endif %}"
-               {% if not page_obj.has_next %}tabindex="-1" aria-disabled="true"{% endif %}>
-                <span aria-hidden="true">&raquo;</span>
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}" aria-label="Next">
+                Próxima <span aria-hidden="true">»</span>
             </a>
         </li>
-        
+        {% endif %}
+
         {# Last page button #}
-        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
-            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}"
-               {% if not page_obj.has_next %}tabindex="-1" aria-disabled="true"{% endif %}>
-                <span aria-hidden="true">&raquo;&raquo;</span>
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if query_string %}&{{ query_string }}{% endif %}" aria-label="Last">
+                Última <span aria-hidden="true">»</span>
             </a>
         </li>
+        {% endif %}
     </ul>
 </nav>
 {% endif %}
