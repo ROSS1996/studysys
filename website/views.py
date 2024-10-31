@@ -139,21 +139,30 @@ class DisciplinaListView(ListView):
     model = Disciplina
     template_name = 'disciplinas/disciplina_list.html'
     context_object_name = 'disciplinas'
+    paginate_by = 9  # 9 items per page as requested
 
     def get_queryset(self):
+        # Your existing queryset logic here
         return (Disciplina.objects
                 .annotate(
                     total_topicos=Count('topico'),
-                    topicos_estudados=Count('topico', 
-                        filter=Q(topico__data_estudo__isnull=False)),
+                    topicos_estudados=Count('topico', filter=Q(topico__data_estudo__isnull=False)),
                     percentual_estudado=Coalesce(
-                        100.0 * Count('topico', 
-                            filter=Q(topico__data_estudo__isnull=False)) /
-                        Count('topico'),
+                        100.0 * Count('topico', filter=Q(topico__data_estudo__isnull=False)) / Count('topico'),
                         0.0
                     )
                 )
                 .all())
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        paginator = context['paginator']
+        page_obj = context['page_obj']
+
+        # Generate a range of pages to display in pagination
+        context['page_range'] = paginator.get_elided_page_range(number=page_obj.number, on_each_side=2, on_ends=1)
+
+        return context
 
 
 class DisciplinaDetailView(DetailView):
