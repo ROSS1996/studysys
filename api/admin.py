@@ -153,10 +153,11 @@ class TopicoAdmin(admin.ModelAdmin):
 
 
 @admin.register(Questao)
+
 class QuestaoAdmin(admin.ModelAdmin):
     list_display = ('id', 'banca', 'concurso', 'get_enunciado_preview',
-                   'resultado_badge', 'data_realizada')
-    list_filter = ('banca', 'concurso', 'acerto', 'data_realizada', 'topicos')
+                    'resultado_badge', 'data_realizada')
+    list_filter = ('banca', 'concurso', 'data_realizada', 'topicos')
     search_fields = ('enunciado', 'banca__nome', 'concurso__entidade')
     inlines = [QuestaoTopicoInline]
     date_hierarchy = 'data_realizada'
@@ -166,10 +167,10 @@ class QuestaoAdmin(admin.ModelAdmin):
     get_enunciado_preview.short_description = 'Enunciado'
 
     def resultado_badge(self, obj):
-        if obj.acerto is None:
+        if obj.resposta is None:
             color = 'gray'
             status = 'Não respondida'
-        elif obj.acerto:
+        elif obj.resposta == obj.correta:
             color = 'green'
             status = 'Acerto'
         else:
@@ -187,14 +188,14 @@ class QuestaoAdmin(admin.ModelAdmin):
         }),
         ('Alternativas', {
             'fields': (
-                ('alternativa_1', 'correta_1'),
-                ('alternativa_2', 'correta_2'),
-                ('alternativa_3', 'correta_3'),
-                ('alternativa_4', 'correta_4'),
-                ('alternativa_5', 'correta_5'),
+                ('alternativa_1', 'alternativa_2', 'alternativa_3', 'alternativa_4', 'alternativa_5'),
+                'correta', 'resposta'
             )
         }),
-        ('Resultado', {
-            'fields': ('acerto', 'data_realizada', 'anulada')
-        })
+        ('Resolução', {
+            'fields': ('resolucao',)
+        }),
+        ('Informações Adicionais', {
+            'fields': ('data_realizada', 'anulada')
+        }),
     )

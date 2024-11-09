@@ -74,56 +74,54 @@ class Questao(models.Model):
     concurso = models.ForeignKey(Concurso, on_delete=models.SET_NULL, null=True)
     enunciado = models.TextField()
     
-    # Make alternativas mandatory
+    # Define alternativas 1 e 2 como obrigatórias e 3, 4, e 5 como opcionais
     alternativa_1 = models.TextField(default='Verdadeiro')
-    correta_1 = models.BooleanField(default=True)
     alternativa_2 = models.TextField(default='Falso')
-    correta_2 = models.BooleanField(default=False)
-    
-    # Alternativas 3, 4, 5 are optional and correspond to optional corretas
     alternativa_3 = models.TextField(null=True, blank=True)
-    correta_3 = models.BooleanField(blank=True)
     alternativa_4 = models.TextField(null=True, blank=True)
-    correta_4 = models.BooleanField(blank=True)
     alternativa_5 = models.TextField(null=True, blank=True)
-    correta_5 = models.BooleanField(blank=True)
+    
+    # Nova implementação dos campos correta e resposta
+    correta = models.IntegerField(default=1)
+    resposta = models.IntegerField(null=True, blank=True)
+
+    # Campo opcional de resolução
+    resolucao = models.TextField(null=True, blank=True)
 
     topicos = models.ManyToManyField(Topico, through='QuestaoTopico')
     data_realizada = models.DateField(null=True, blank=True)
-    acerto = models.BooleanField(null=True, blank=True)
     anulada = models.BooleanField(null=True, blank=True)
 
     def __str__(self):
         return f"Questão {self.id}"
 
     def clean(self):
-        # Validate alternativas and corretas
-        if not self.alternativa_1 and self.correta_1:
-            raise ValidationError('Alternativa 1 must not be empty if correta 1 is True.')
+        # Valida que a resposta e correta estejam em 1-5, se fornecidas
+        if self.correta is not None and not (1 <= self.correta <= 5):
+            raise ValidationError('O campo correta deve ser um número entre 1 e 5.')
         
-        if not self.alternativa_2 and self.correta_2:
-            raise ValidationError('Alternativa 2 must not be empty if correta 2 is True.')
-
-        # Ensure at least one correta is True
-        corretas = [self.correta_1, self.correta_2, self.correta_3, self.correta_4, self.correta_5]
-        if not any(corretas):
-            raise ValidationError('At least one correta must be True.')
+        if self.resposta is not None and not (1 <= self.resposta <= 5):
+            raise ValidationError('O campo resposta deve ser um número entre 1 e 5.')
         
-        # Ensure no more than one correta is True
-        if corretas.count(True) > 1:
-            raise ValidationError('Only one question can be True.')
-
-        # Check that if alternatives 3, 4, or 5 are empty, their corretas must also be None
-        if not self.alternativa_3 and self.correta_3 is True:
-            raise ValidationError('Correta 3 cannot be set if Alternativa 3 is empty.')
+        # Valida que a resposta correta não aponte para uma alternativa nula ou vazia
+        alternativas = [
+            self.alternativa_1,
+            self.alternativa_2,
+            self.alternativa_3,
+            self.alternativa_4,
+            self.alternativa_5,
+        ]
         
-        if not self.alternativa_4 and self.correta_4 is True:
-            raise ValidationError('Correta 4 cannot be set if Alternativa 4 is empty.')
+        if self.correta is not None and not alternativas[self.correta - 1]:
+            raise ValidationError(f'A alternativa {self.correta} está vazia, portanto não pode ser a correta.')
         
-        if not self.alternativa_5 and self.correta_5 is True:
-            raise ValidationError('Correta 5 cannot be set if Alternativa 5 is empty.')
-
-
+        if self.resposta is not None and not alternativas[self.resposta - 1]:
+            raise ValidationError(f'A alternativa {self.resposta} está vazia, portanto não pode ser a resposta.')
+        
+        # Valida que as alternativas não "pulem" posições
+        for i in range(2, 5):
+            if alternativas[i] and not alternativas[i - 1]:
+                raise ValidationError(f'Alternativa {i + 1} não pode estar preenchida se a alternativa {i} está vazia.')
 
 class QuestaoTopico(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

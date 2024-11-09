@@ -4,7 +4,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from api.models import Banca, Concurso, Disciplina, Topico, Questao, ConcursoTopico
 from .forms import BancaForm, ConcursoForm, DisciplinaForm, TopicoForm, QuestaoForm
 from django.shortcuts import render
-from django.db.models import Count, Avg, Q, F, Max
+from django.db.models import Count, Avg, Q, F, Max, Case, When, Value, IntegerField  # Import these models
 from datetime import datetime, timedelta
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse
@@ -56,13 +56,14 @@ class ConcursoDetailView(DetailView):
         
         # Annotate topicos with `total_questoes`, `total_acertos` and select `grupo`
         topicos = (self.object.topico_set
-                   .annotate(
-                       total_questoes=Count('questao'),
-                       total_acertos=Count('questao', filter=Q(questao__acerto=True))
-                   )
-                   .select_related('disciplina', 'grupo')  # Include related fields
-                   .order_by('disciplina__nome', 'grupo__nome', 'nome')  # Sort by disciplina, grupo, and then topico name
-                   .all())
+                .annotate(
+                    total_questoes=Count('questao'),
+                    total_acertos=Count('questao', filter=Q(questao__resposta=F('questao__correta'))),
+                    questoes_respondidas=Count('questao', filter=Q(questao__data_realizada__isnull=False))
+                )
+                .select_related('disciplina', 'grupo')
+                .order_by('disciplina__nome', 'grupo__nome', 'nome')
+                .all())
 
         # Group topicos by disciplina
         for topico in topicos:
@@ -183,7 +184,7 @@ class DisciplinaDetailView(DetailView):
                     filter=Q(questao__data_realizada__isnull=False)),
                 taxa_acerto=Coalesce(
                     100.0 * Count('questao', 
-                        filter=Q(questao__acerto=True)) /
+                        filter=Q(questao__resposta=F('questao__correta'))) /
                     Count('questao', 
                         filter=Q(questao__data_realizada__isnull=False)),
                     None
@@ -218,7 +219,7 @@ class DisciplinaDetailView(DetailView):
             'total_questoes': questoes.count(),
             'questoes_respondidas': questoes.exclude(data_realizada=None).count(),
             'taxa_acerto': (
-                questoes.filter(acerto=True).count() /
+                questoes.filter(resposta=F('correta')).count() /
                 questoes.exclude(data_realizada=None).count() * 100
                 if questoes.exclude(data_realizada=None).exists()
                 else 0
@@ -257,9 +258,9 @@ class TopicoListView(ListView):
         topicos = (Topico.objects
                 .annotate(
                     total_questoes=Count('questao'),
-                    total_acertos=Count('questao', filter=Q(questao__acerto=True)),
+                    total_acertos=Count('questao', filter=Q(questao__resposta=F('questao__correta'))),
                     taxa_acerto=Coalesce(
-                        100.0 * Count('questao', filter=Q(questao__acerto=True)) /
+                        100.0 * Count('questao', filter=Q(questao__resposta=F('questao__correta'))) /
                         Count('questao'),
                         0.0
                     )
@@ -276,7 +277,6 @@ class TopicoListView(ListView):
             disciplinas[topico.disciplina].append(topico)
             
         return disciplinas
-
 
 class TopicoDetailView(DetailView):
     model = Topico
@@ -299,9 +299,9 @@ class TopicoDetailView(DetailView):
         context['stats'] = {
             'total_questoes': topico.questao_set.count(),
             'questoes_respondidas': topico.questao_set.exclude(data_realizada=None).count(),
-            'total_acertos': topico.questao_set.filter(acerto=True).count(),
+            'total_acertos': topico.questao_set.filter(resposta=F('correta')).count(),
             'taxa_acerto': (
-                topico.questao_set.filter(acerto=True).count() /
+                topico.questao_set.filter(resposta=F('correta')).count() /
                 topico.questao_set.exclude(data_realizada=None).count() * 100
                 if topico.questao_set.exclude(data_realizada=None).exists()
                 else 0
@@ -309,7 +309,6 @@ class TopicoDetailView(DetailView):
         }
         
         return context
-
 
 class TopicoCreateView(CreateView):
     model = Topico
@@ -341,7 +340,7 @@ class QuestaoListView(ListView):
         recent_correct_answers = []
 
         for questao in queryset:
-            if questao.acerto and questao.data_realizada and questao.data_realizada >= three_months_ago:
+            if questao.resposta and questao.data_realizada and questao.data_realizada >= three_months_ago and questao.resposta == questao.correta:
                 recent_correct_answers.append(questao.id)
 
         # Store this list in the instance for access in the template
@@ -427,31 +426,27 @@ def answer_question(request, questao_id):
     try:
         questao = Questao.objects.get(id=questao_id)
         
-        # Determine the correct answer by checking each `correta_X` field
-        correct_answer = None
-        for i in range(1, 6):  # Loop through correta_1 to correta_5
-            if getattr(questao, f"correta_{i}"):
-                correct_answer = f"correta_{i}"
-                break
-        
-        # Compare selected option with the correct answer
-        is_correct = (selected_option == correct_answer)
-        
+        # Determine if the selected option is correct
+        try:
+            is_correct = (int(selected_option) == questao.correta)
+        except ValueError:
+            # Handle the error, e.g., return an error response
+            return JsonResponse({"error": "Invalid selected option"}, status=400)
+
         # Update the question instance with response date and correctness
         questao.data_realizada = timezone.now().date()
-        questao.acerto = is_correct
+        questao.resposta = selected_option
         questao.save()
 
         # Respond with JSON indicating if the answer was correct and updated values
         return JsonResponse({
             "correct": is_correct,
             "data_realizada": questao.data_realizada.strftime('%d/%m/%Y'),
-            "acerto": questao.acerto,
+            "resposta": questao.resposta,
         })
 
     except Questao.DoesNotExist:
         return JsonResponse({"error": "Questão not found."}, status=404)
-
 
 def index(request):
     # Calculate statistics
@@ -459,7 +454,11 @@ def index(request):
     tres_meses_atras = hoje - timedelta(days=90)
 
     # Calculate the success rate, handling the case where no answers are available
-    taxa_acerto_aggregate = Questao.objects.exclude(data_realizada=None).aggregate(taxa=Avg('acerto'))
+    taxa_acerto_aggregate = Questao.objects.filter(data_realizada__isnull=False).aggregate(taxa=Avg(Case(
+        When(resposta=F('correta'), then=Value(1)),
+        default=Value(0),
+        output_field=IntegerField()
+    )))
     taxa_acerto = taxa_acerto_aggregate['taxa']
     if taxa_acerto is not None:
         taxa_acerto = round(taxa_acerto * 100)
@@ -479,8 +478,8 @@ def index(request):
         ).count(),
 
         # Count answered questions
-        'questoes_respondidas': Questao.objects.exclude(
-            data_realizada=None
+        'questoes_res pondidas': Questao.objects.filter(
+            data_realizada__isnull=False
         ).count(),
 
         # Set calculated success rate
@@ -497,7 +496,7 @@ def index(request):
             inscrito=True,
             finalizado=False
         ).order_by('data_prova')[:5],
-
     }
 
     return render(request, 'index.html', context)
+		

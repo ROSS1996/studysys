@@ -1,144 +1,229 @@
 {% extends "base.html" %}
+{% load custom_filters %}
+
 {% block content %}
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="container py-5">
+    <header class="d-flex justify-content-between align-items-center mb-5">
         <h1 class="mb-0" style="color: var(--primary-color);">{{ concurso.entidade }} - {{ concurso.cargo }}</h1>
         <a href="{% url 'concurso_edit' concurso.id %}" class="btn btn-primary">Editar</a>
+    </header>
+
+    <!-- Informações do Concurso -->
+    <div class="card mb-5 shadow-sm">
+        <div class="card-header bg-light">
+            <h2 class="h4 mb-0">Informações do Concurso</h2>
+        </div>
+        <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Banca:</strong>
+                            <span>{{ concurso.banca }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Data de Abertura:</strong>
+                            <span>{{ concurso.data_abertura|date:"d/m/Y" }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Data da Prova:</strong>
+                            <span>{{ concurso.data_prova|date:"d/m/Y" }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Salário:</strong>
+                            <span>R$ {{ concurso.salario|floatformat:2 }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Nível:</strong>
+                            <span>{{ concurso.get_nivel_display }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Área:</strong>
+                            <span>{{ concurso.area }}</span>
+                        </li>
+                        {% if concurso.edital %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Edital:</strong>
+                            <a href="{{ concurso.edital }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">Ver Edital</a>
+                        </li>
+                        {% endif %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Status:</strong>
+                            {% if concurso.finalizado %}
+                                <span class="badge bg-secondary">Finalizado</span>
+                            {% elif concurso.iniciado %}
+                                <span class="badge bg-primary">Em andamento</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Não iniciado</span>
+                            {% endif %}
+                        </li>
+                    </ul>
+        </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-light">
-                    <h4 class="mb-0">Informações do Concurso</h4>
-                </div>
-                <div class="card-body">
-                    <p><strong>Banca:</strong> {{ concurso.banca }}</p>
-                    <p><strong>Data de Abertura:</strong> {{ concurso.data_abertura|date:"d/m/Y" }}</p>
-                    <p><strong>Data da Prova:</strong> {{ concurso.data_prova|date:"d/m/Y" }}</p>
-                    <p><strong>Salário:</strong> R$ {{ concurso.salario|floatformat:2 }}</p>
-                    <p><strong>Nível:</strong> {{ concurso.get_nivel_display }}</p>
-                    <p><strong>Área:</strong> {{ concurso.area }}</p>
-                    {% if concurso.edital %}
-                    <p><strong>Edital:</strong> <a href={{ concurso.edital }} target="_blank" rel="noopener noreferrer">Link</a></p>
-                    {% endif %}
-                    <p>
-                        <strong>Status:</strong>
-                        {% if concurso.finalizado %}
-                            <span class="badge bg-secondary">Finalizado</span>
-                        {% elif concurso.iniciado %}
-                            <span class="badge bg-primary">Em andamento</span>
-                        {% else %}
-                            <span class="badge bg-warning text-dark">Não iniciado</span>
-                        {% endif %}
-                    </p>
-                </div>
-            </div>
+    <!-- Progresso por Disciplina -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h2 class="h4 mb-0">Progresso por Disciplina</h2>
         </div>
-
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-light">
-                    <h4 class="mb-0">Progresso nos Tópicos</h4>
-                </div>
-                <div class="card-body">
+        <div class="card-body">
                     {% for disciplina, topicos in disciplinas.items %}
-                        <details class="discipline-details {% if forloop.first %}open{% endif %}">
-                            <summary>{{ disciplina.nome }}</summary>
-                            <div class="table-responsive mt-2">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Tópico</th>
-                                            <th>Grupo</th>
-                                            <th>Estudado</th>
-                                            <th>Questões</th>
-                                            <th>Acertos</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for topico in topicos %}
-                                            <tr>
-                                                <td>{{ topico.nome }}</td>
-                                                <td>{{ topico.grupo.nome|default:"-" }}</td>
-                                                <td>
-                                                    {% if topico.data_estudo %}
-                                                        <span class="badge bg-success">Sim</span>
-                                                    {% else %}
-                                                        <span class="badge bg-danger">Não</span>
-                                                    {% endif %}
-                                                </td>
-                                                <td>{{ topico.total_questoes }}</td>
-                                                <td>{{ topico.total_acertos }}</td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
+                    {% with total_topicos=topicos|length estudados=topicos|count_by_attr:"data_estudo" %}
+                        {% with percentage=estudados|multiply:100|divide:total_topicos %}
+                        <div class="progress-widget mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <span class="progress-label">{{ disciplina.nome }}</span>
+                                    <button class="btn btn-sm btn-outline-primary ms-2" 
+                                            onclick="showTopicosModal('{{ disciplina.nome }}', {{ forloop.counter0 }})">
+                                        Detalhes
+                                    </button>
+                                </div>
+                                <span class="progress-percentage">{{ percentage|floatformat:1 }}%</span>
                             </div>
-                        </details>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-primary" 
+                                     role="progressbar" 
+                                     style="width: {{ percentage }}%;" 
+                                     aria-valuenow="{{ percentage }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-2">
+                                <small class="text-muted">{{ estudados }} de {{ total_topicos }} tópicos estudados</small>
+                                <small class="text-muted">
+                                    {% with total_questoes=topicos|sum_attr:"total_questoes" %}
+                                    {% with questoes_respondidas=topicos|sum_attr:"questoes_respondidas" %}
+                                    {% with total_acertos=topicos|sum_attr:"total_acertos" %}
+                                    {% if questoes_respondidas > 0 %}
+                                        {{ questoes_respondidas }} questões respondidas • 
+                                        {{ total_acertos|multiply:100|divide:questoes_respondidas|floatformat:1 }}% de acerto
+                                    {% else %}
+                                        Nenhuma questão respondida
+                                    {% endif %}
+                                    {% endwith %}
+                                    {% endwith %}
+                                    {% endwith %}
+                                </small>
+                            </div>
+                        </div>
+                        {% endwith %}
+                    {% endwith %}
                     {% endfor %}
-                </div>
-            </div>
         </div>
     </div>
 </div>
 
+<!-- Modais para cada disciplina -->
+{% for disciplina, topicos in disciplinas.items %}
+<div class="modal fade" id="topicosModal{{ forloop.counter0 }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tópicos de {{ disciplina.nome }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Tópico</th>
+                                <th>Grupo</th>
+                                <th>Estudado</th>
+                                <th>Questões</th>
+                                <th>Acertos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for topico in topicos %}
+                                <tr>
+                                    <td>{{ topico.nome }}</td>
+                                    <td>{{ topico.grupo.nome|default:"-" }}</td>
+                                    <td>
+                                        {% if topico.data_estudo %}
+                                            <span class="badge bg-success">Sim</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Não</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ topico.total_questoes }}</td>
+                                    <td>{{ topico.total_acertos }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
 <style>
-    .discipline-details {
+    .progress-widget {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 6px;
+        transition: box-shadow 0.3s ease-in-out;
         margin-bottom: 1rem;
-        border: 1px solid var(--primary-light);
-        border-radius: 8px;
-        overflow: hidden;
     }
 
-    .discipline-details summary {
-        padding: 1rem;
-        background-color: var(--primary-light);
-        color: var(--primary-color);
-        font-weight: bold;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-    }
-
-    .discipline-details summary:hover {
-        background-color: var(--primary-color);
-        color: white;
-    }
-
-    .discipline-details summary:focus {
-        outline: none;
-    }
-
-    .discipline-details[open] summary {
-        background-color: var(--primary-color);
-        color: white;
-    }
-
-    .discipline-details .table-responsive {
-        padding: 1rem;
-        background-color: white;
-    }
-
-    .discipline-details table {
+    .progress-widget:last-child {
         margin-bottom: 0;
+    }
+
+    .progress-label {
+        font-weight: 500;
+        color: var(--bs-gray-700);
+    }
+
+    .progress-percentage {
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .progress {
+        background-color: #e9ecef;
+    }
+
+    .progress-bar {
+        transition: width 0.6s ease;
+    }
+
+    .modal-dialog-scrollable {
+        max-height: 90vh;
+    }
+
+    .btn-outline-primary {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+
+    .btn-outline-primary:hover {
+        background-color: var(--primary-color);
+        color: white;
+    }
+
+    .card {
+        transition: box-shadow 0.3s ease-in-out;
+    }
+
+    .card:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .table {
+        --bs-table-hover-bg: rgba(0, 123, 255, 0.1);
     }
 </style>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const detailsElements = document.querySelectorAll(".discipline-details");
-        detailsElements.forEach((details) => {
-            details.addEventListener("toggle", function() {
-                if (details.open) {
-                    // Close all other details
-                    detailsElements.forEach((d) => {
-                        if (d !== details) {
-                            d.removeAttribute("open");
-                        }
-                    });
-                }
-            });
-        });
-    });
+    function showTopicosModal(disciplinaNome, index) {
+        const modal = new bootstrap.Modal(document.getElementById(`topicosModal${index}`));
+        modal.show();
+    }
 </script>
 {% endblock %}

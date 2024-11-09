@@ -57,8 +57,22 @@ class QuestaoForm(forms.ModelForm):
     class Meta:
         model = Questao
         fields = [
-            'banca', 'concurso', 'enunciado', 'alternativa_1', 
-            'correta_1', 'alternativa_2', 'correta_2', 'alternativa_3', 
-            'correta_3', 'alternativa_4', 'correta_4', 'alternativa_5', 
-            'correta_5', 'topicos', 'data_realizada', 'acerto', 'anulada'
+            'banca', 'concurso', 'enunciado',
+            'alternativa_1', 'alternativa_2', 'alternativa_3', 'alternativa_4', 'alternativa_5',
+            'correta', 'resposta', 'resolucao',
+            'topicos', 'data_realizada', 'anulada'
         ]
+
+    def clean_correta(self):
+        # Valida o campo correta para garantir que seja um valor entre 1 e 5, se fornecido
+        correta = self.cleaned_data.get('correta')
+        if correta and not (1 <= correta <= 5):
+            raise forms.ValidationError('O campo correta deve ser um número entre 1 e 5.')
+        return correta
+
+    def clean_resposta(self):
+        # Valida o campo resposta para garantir que seja um valor entre 1 e 5, se fornecido
+        resposta = self.cleaned_data.get('resposta')
+        if resposta and not (1 <= resposta <= 5):
+            raise forms.ValidationError('O campo resposta deve ser um número entre 1 e 5.')
+        return resposta

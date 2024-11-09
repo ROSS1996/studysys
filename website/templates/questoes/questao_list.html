@@ -101,8 +101,8 @@
                         {% endif %}
                         {% if questao.data_realizada %}
                             <span id="status-badge-{{ questao.id }}" 
-                                class="badge {% if questao.acerto %}bg-success{% else %}bg-danger{% endif %}">
-                                {% if questao.acerto %}Correta{% else %}Incorreta{% endif %}
+                                class="badge {% if questao.resposta == questao.correta %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if questao.resposta == questao.correta %}Correta{% else %}Incorreta{% endif %}
                             </span>
                         {% endif %}
                     </div>
@@ -118,30 +118,27 @@
 
                 {% for i in "12345" %}
                     {% with alternativa_field="alternativa_"|add:i %}
-                    {% with correta_field="correta_"|add:i %}
                     {% with alternativa=questao|get_attr:alternativa_field %}
                     {% if alternativa %}
                         <div class="form-check">
                             <input type="radio" 
                                 id="option{{ i }}-{{ questao.id }}" 
                                 name="questao-{{ questao.id }}" 
-                                value="correta_{{ i }}"
+                                value="{{ i }}"
                                 class="form-check-input question-option"
-                                data-questao-id="{{ questao.id }}"
-                                {% if questao.data_realizada %}disabled{% endif %}
-                                {% if questao.data_realizada and questao|get_attr:correta_field %}checked{% endif %}>
-                            <label class="form-check-label" for="option{{ i }}-{{ questao.id }}">
+                                {% if not questao.data_realizada|is_more_than_a_month_old and questao.resposta == questao.correta %}disabled{% endif %}
+                                {% if not questao.data_realizada|is_more_than_a_month_old and questao.resposta == questao.correta and questao.resposta == forloop.counter %}checked{% endif %}>
+                                <label class="form-check-label" for="option{{ i }}-{{ questao.id }}">
                                 {{ alternativa }}
                             </label>
                         </div>
                     {% endif %}
                     {% endwith %}
                     {% endwith %}
-                    {% endwith %}
                 {% endfor %}
 
-                {% if not questao.data_realizada %}
-                    <button class="btn btn-primary btn-sm mt-3 answer-button" 
+                {% if not questao.data_realizada or questao.data_realizada|is_more_than_a_month_old or questao.resposta != questao.correta %}
+                <button class="btn btn-primary btn-sm mt-3 answer-button" 
                             data-questao-id="{{ questao.id }}">
                         Responder
                     </button>
@@ -166,67 +163,75 @@
         this.form.submit();
     });
 
-// Handle question answers
-document.querySelectorAll('.answer-button').forEach(button => {
-    button.addEventListener('click', async function() {
-        const questaoId = this.dataset.questaoId;
-        const selectedOption = document.querySelector(`input[name="questao-${questaoId}"]:checked`);
+    // Handle question answers
+    document.querySelectorAll('.answer-button').forEach(button => {
+        button.addEventListener('click', async function() {
+            const questaoId = this.dataset.questaoId;
+            const selectedOption = document.querySelector(`input[name="questao-${questaoId}"]:checked`);
 
-        if (!selectedOption) {
-            alert('Por favor, selecione uma alternativa.');
-            return;
-        }
-
-        try {
-            const response = await fetch(`/questoes/${questaoId}/answer/`, {  // Updated URL
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({
-                    selected_option: selectedOption.value
-                })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                // Update the UI
-                const dateBadge = document.createElement('span');
-                dateBadge.id = `date-badge-${questaoId}`;
-                dateBadge.className = 'badge bg-secondary me-2';
-                dateBadge.textContent = data.data_realizada;
-
-                const statusBadge = document.createElement('span');
-                statusBadge.id = `status-badge-${questaoId}`;
-                statusBadge.className = `badge ${data.correct ? 'bg-success' : 'bg-danger'}`;
-                statusBadge.textContent = data.correct ? 'Correta' : 'Incorreta';
-
-                // Find the badge container and update it
-                const badgeContainer = document.querySelector(`#questao-${questaoId} .d-flex > div`);
-                badgeContainer.innerHTML = '';
-                badgeContainer.appendChild(dateBadge);
-                badgeContainer.appendChild(statusBadge);
-
-                // Disable the radio buttons and answer button
-                document.querySelectorAll(`input[name="questao-${questaoId}"]`).forEach(input => {
-                    input.disabled = true;
-                });
-                this.style.display = 'none';
-
-                // Show feedback
-                const feedbackDiv = document.getElementById(`feedback-${questaoId}`);
-                feedbackDiv.innerHTML = `<div class="alert ${data.correct ? 'alert-success' : 'alert-danger'}">
-                    ${data.correct ? 'Parabéns! Resposta correta!' : 'Resposta incorreta. Tente novamente em outro momento.'}
-                </div>`;
+            if (!selectedOption) {
+                alert('Por favor, selecione uma alternativa.');
+                return;
             }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Erro ao enviar resposta. Por favor, tente novamente.');
-        }
+
+            try {
+                const response = await fetch(`/questoes/${questaoId}/answer/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        selected_option: selectedOption.value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Update the UI
+                    const dateBadge = document.createElement('span');
+                    dateBadge.id = `date-badge-${questaoId}`;
+                    dateBadge.className = 'badge bg-secondary me-2';
+                    dateBadge.textContent = data.data_realizada;
+
+                    const statusBadge = document.createElement('span');
+                    statusBadge.id = `status-badge-${questaoId}`;
+                    statusBadge.className = `badge ${data.correct ? 'bg-success' : 'bg-danger'}`;
+                    statusBadge.textContent = data.correct ? 'Correta' : 'Incorreta';
+
+                    // Find the badge container and update it
+                    const badgeContainer = document.querySelector(`#questao-${questaoId} .d-flex > div`);
+                    badgeContainer.innerHTML = '';
+                    badgeContainer.appendChild(dateBadge);
+                    badgeContainer.appendChild(statusBadge);
+
+                    // Mark the correct answer if it's correct
+                    const correctOption = document.querySelector(`input[name="questao-${questaoId}"][value="${data.resposta}"]`);
+                    if (correctOption) {
+                        correctOption.checked = true;
+                    }
+
+                    // Disable the radio buttons and answer button if the answer is correct
+                    if (data.correct) {
+                        document.querySelectorAll(`input[name="questao-${questaoId}"]`).forEach(input => {
+                            input.disabled = true;
+                        });
+                        this.style.display = 'none';
+                    }
+
+                    // Show feedback
+                    const feedbackDiv = document.getElementById(`feedback-${questaoId}`);
+                    feedbackDiv.innerHTML = `<div class="alert ${data.correct ? 'alert-success' : 'alert-danger'}">
+                        ${data.correct ? 'Parabéns! Resposta correta!' : 'Resposta incorreta. Tente novamente em outro momento.'}
+                    </div>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Erro ao enviar resposta. Por favor, tente novamente.');
+            }
+        });
     });
-});
 
     // Function to get CSRF token from cookies
     function getCookie(name) {
